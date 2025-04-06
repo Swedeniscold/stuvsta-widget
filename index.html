@@ -1,129 +1,109 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stuvsta live-info</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realtidsinformation för Stuvsta</title>
   <style>
     body {
-      font-family: sans-serif;
-      background: #f9f9f9;
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 1em;
+      padding: 0;
+      background-color: #f0f0f0;
     }
-    #dashboard {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5em;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    h2, h3 {
-      margin-top: 0;
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
     }
-    #weather {
-      font-size: 1.2em;
-      margin-bottom: 1em;
+    .weather, .departures {
+      margin-bottom: 30px;
     }
-    ul#departures {
-      list-style: none;
-      padding-left: 0;
+    .departures h2, .weather h2 {
+      margin: 0;
+      font-size: 1.5em;
+      color: #333;
     }
-    ul#departures li {
-      padding: 0.5em 0;
-      border-bottom: 1px solid #eee;
+    .departure-list, .weather-info {
+      margin-top: 10px;
+    }
+    .departure, .weather-item {
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    }
+    .weather-item {
+      display: flex;
+      align-items: center;
+    }
+    .weather-icon {
+      width: 50px;
+      height: 50px;
+      margin-right: 15px;
     }
   </style>
 </head>
 <body>
-  <div id="dashboard">
-    <h2>Stuvsta just nu</h2>
-    <div id="weather">Hämtar väder...</div>
-    <h3>Nästa pendeltåg</h3>
-    <ul id="departures">Laddar avgångar...</ul>
+  <div class="container">
+    <div class="header">
+      <h1>Realtidsinformation - Stuvsta</h1>
+    </div>
+    
+    <!-- Vädersektion -->
+    <div class="weather">
+      <h2>Väder i Huddinge</h2>
+      <div class="weather-info" id="weather-info">
+        <!-- Väderinformation kommer här -->
+      </div>
+    </div>
+
+    <!-- Avgångar sektion -->
+    <div class="departures">
+      <h2>Norrgående Pendeltågavgångar från Stuvsta</h2>
+      <div class="departure-list" id="departure-list">
+        <!-- Avgångar kommer här -->
+      </div>
+    </div>
   </div>
 
   <script>
-    const WEATHER_API_KEY = "be599ad20e043a231aae8d76cdd8b0b9";  // Byt ut med din OpenWeatherMap API-nyckel
-    const GTFS_CLIENT_NAME = "Realtid_Stuvsta";  // Ditt Trafiklab-klientnamn
-    const STUVSTA_STOP_ID = "stop-point:SL:Stuvsta";
-
-    // Hämta väderdata för Huddinge
-    fetch(`https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&appid=${WEATHER_API_KEY}&units=metric&lang=sv`)
-      .then(res => res.json())
+    // Hämta data från Vercel API (serverless funktion)
+    fetch('/api/stuvsta')
+      .then(response => response.json())
       .then(data => {
-        const desc = data.weather[0].description;
-        const temp = Math.round(data.main.temp);
-        const icon = data.weather[0].icon;
-        const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-
-    document.getElementById('weather').innerHTML = `
-      <img src="${iconUrl}" alt="${desc}" style="vertical-align: middle; height: 48px;" />
-      ${desc}, ${temp}°C
+        // Uppdatera väderinformationen på sidan
+        const weatherHtml = `
+          <div class="weather-item">
+            <img class="weather-icon" src="https://openweathermap.org/img/w/${data.weather.icon}.png" alt="Väder Icon">
+            <div>
+              <p><strong>${data.weather.description}</strong></p>
+              <p>Temperatur: ${data.weather.temperature}°C</p>
+            </div>
+          </div>
         `;
+        document.getElementById('weather-info').innerHTML = weatherHtml;
+
+        // Uppdatera avgångarna på sidan
+        const departuresHtml = data.departures.map(departure => {
+          return `
+            <div class="departure">
+              <p><strong>Linje: ${departure.lineNumber}</strong></p>
+              <p>Avgångstid: ${departure.departureTime}</p>
+              <p>Destination: ${departure.destination}</p>
+            </div>
+          `;
+        }).join('');
+        document.getElementById('departure-list').innerHTML = departuresHtml;
       })
-  .catch(() => {
-    document.getElementById('weather').innerText = "Kunde inte hämta väder.";
-      });
-
-    // Filtrera norrgående destinationer
-    const norrgåendeDestinationer = ["Stockholm C", "Märsta", "Uppsala"]; // Lägg till fler norrgående stationer här
-
-    // Hämta pendeltågsavgångar
-    const query = `
-      {
-        stopPlace(id: "${STUVSTA_STOP_ID}") {
-          estimatedCalls(timeRange: 3600, numberOfDepartures: 5) {
-            expectedDepartureTime
-            destinationDisplay {
-              frontText
-            }
-            serviceJourney {
-              journeyPattern {
-                line {
-                  publicCode
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    fetch("https://api.entur.io/journey-planner/v3/graphql", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "ET-Client-Name": GTFS_CLIENT_NAME
-      },
-      body: JSON.stringify({ query })
-    })
-      .then(res => res.json())
-      .then(data => {
-        const calls = data.data.stopPlace.estimatedCalls;
-        const list = document.getElementById('departures');
-        list.innerHTML = "";
-        if (!calls.length) {
-          list.innerHTML = "<li>Inga avgångar just nu.</li>";
-        }
-        calls.forEach(call => {
-          const destination = call.destinationDisplay.frontText;
-          if (norrgåendeDestinationer.includes(destination)) { // Kontrollera om destinationen är norrgående
-            const line = call.serviceJourney.journeyPattern.line.publicCode;
-            const depTime = new Date(call.expectedDepartureTime);
-            const now = new Date();
-            const mins = Math.round((depTime - now) / 60000);
-
-            const li = document.createElement("li");
-            li.textContent = `${line} mot ${destination} – om ${mins} min`;
-            list.appendChild(li);
-          }
-        });
-      })
-      .catch(() => {
-        document.getElementById('departures').innerHTML = "<li>Kunde inte hämta avgångar 😞</li>";
-      });
+      .catch(error => console.error('Fel:', error));
   </script>
 </body>
 </html>
