@@ -50,7 +50,7 @@
     const STUVSTA_STOP_ID = "stop-point:SL:Stuvsta";
 
     // Hämta väder
-    fetch(`https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&appid=${WEATHER_API_KEY}&units=metric&lang=sv`)
+    fetch(`https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&appid=${be599ad20e043a231aae8d76cdd8b0b9}&units=metric&lang=sv`)
       .then(res => res.json())
       .then(data => {
         const desc = data.weather[0].description;
