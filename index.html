@@ -45,21 +45,30 @@
   </div>
 
   <script>
-    const WEATHER_API_KEY = "be599ad20e043a231aae8d76cdd8b0b9";
-    const GTFS_CLIENT_NAME = "Realtid_Stuvsta";
+    const WEATHER_API_KEY = "be599ad20e043a231aae8d76cdd8b0b9";  // Byt ut med din OpenWeatherMap API-nyckel
+    const GTFS_CLIENT_NAME = "Realtid_Stuvsta";  // Ditt Trafiklab-klientnamn
     const STUVSTA_STOP_ID = "stop-point:SL:Stuvsta";
 
-    // Hämta väder
-    fetch(`https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&appid=${be599ad20e043a231aae8d76cdd8b0b9}&units=metric&lang=sv`)
+    // Hämta väderdata för Huddinge
+    fetch(`https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&appid=${WEATHER_API_KEY}&units=metric&lang=sv`)
       .then(res => res.json())
       .then(data => {
         const desc = data.weather[0].description;
         const temp = Math.round(data.main.temp);
-        document.getElementById('weather').innerText = `${desc}, ${temp}°C`;
+        const icon = data.weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+
+    document.getElementById('weather').innerHTML = `
+      <img src="${iconUrl}" alt="${desc}" style="vertical-align: middle; height: 48px;" />
+      ${desc}, ${temp}°C
+        `;
       })
-      .catch(() => {
-        document.getElementById('weather').innerText = "Kunde inte hämta väder.";
+  .catch(() => {
+    document.getElementById('weather').innerText = "Kunde inte hämta väder.";
       });
+
+    // Filtrera norrgående destinationer
+    const norrgåendeDestinationer = ["Stockholm C", "Märsta", "Uppsala"]; // Lägg till fler norrgående stationer här
 
     // Hämta pendeltågsavgångar
     const query = `
@@ -86,7 +95,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "ET-Client-Name": Realtid_Stuvsta
+        "ET-Client-Name": GTFS_CLIENT_NAME
       },
       body: JSON.stringify({ query })
     })
@@ -99,15 +108,17 @@
           list.innerHTML = "<li>Inga avgångar just nu.</li>";
         }
         calls.forEach(call => {
-          const line = call.serviceJourney.journeyPattern.line.publicCode;
-          const dest = call.destinationDisplay.frontText;
-          const depTime = new Date(call.expectedDepartureTime);
-          const now = new Date();
-          const mins = Math.round((depTime - now) / 60000);
+          const destination = call.destinationDisplay.frontText;
+          if (norrgåendeDestinationer.includes(destination)) { // Kontrollera om destinationen är norrgående
+            const line = call.serviceJourney.journeyPattern.line.publicCode;
+            const depTime = new Date(call.expectedDepartureTime);
+            const now = new Date();
+            const mins = Math.round((depTime - now) / 60000);
 
-          const li = document.createElement("li");
-          li.textContent = `${line} mot ${dest} – om ${mins} min`;
-          list.appendChild(li);
+            const li = document.createElement("li");
+            li.textContent = `${line} mot ${destination} – om ${mins} min`;
+            list.appendChild(li);
+          }
         });
       })
       .catch(() => {
