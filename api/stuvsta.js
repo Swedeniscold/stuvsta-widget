@@ -2,8 +2,8 @@ const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
   // API-nycklar
-  const weatherApiKey = 'DIN_OPENWEATHER_API_NYCKEL';
-  const slApiKey = 'DIN_TRAFIKLAB_API_NYCKEL';
+  const weatherApiKey = 'be599ad20e043a231aae8d76cdd8b0b9';
+  const slApiKey = 'af6540c922a84c3ca95d4fd1fa55a37a';
 
   // Hämta väderdata från OpenWeather
   const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&units=metric&appid=${weatherApiKey}`;
