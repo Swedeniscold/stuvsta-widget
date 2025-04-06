@@ -2,14 +2,117 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stuvsta-widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stuvsta live-info</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 1em;
+    }
+    #dashboard {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5em;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      margin-top: 0;
+    }
+    #weather {
+      font-size: 1.2em;
+      margin-bottom: 1em;
+    }
+    ul#departures {
+      list-style: none;
+      padding-left: 0;
+    }
+    ul#departures li {
+      padding: 0.5em 0;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
 </head>
 <body>
-  <div id="dashboard">Hämtar information...</div>
+  <div id="dashboard">
+    <h2>Stuvsta just nu</h2>
+    <div id="weather">Hämtar väder...</div>
+    <h3>Nästa pendeltåg</h3>
+    <ul id="departures">Laddar avgångar...</ul>
+  </div>
+
   <script>
-    // Här lägger vi in väder- och SL-scriptet från tidigare sen
-    document.getElementById("dashboard").innerText = "Koppling klar! Innehåll kommer snart!";
+    const WEATHER_API_KEY = "be599ad20e043a231aae8d76cdd8b0b9";
+    const GTFS_CLIENT_NAME = "Realtid_Stuvsta";
+    const STUVSTA_STOP_ID = "stop-point:SL:Stuvsta";
+
+    // Hämta väder
+    fetch(`https://api.openweathermap.org/data/2.5/weather?q=Stuvsta,SE&appid=${WEATHER_API_KEY}&units=metric&lang=sv`)
+      .then(res => res.json())
+      .then(data => {
+        const desc = data.weather[0].description;
+        const temp = Math.round(data.main.temp);
+        document.getElementById('weather').innerText = `${desc}, ${temp}°C`;
+      })
+      .catch(() => {
+        document.getElementById('weather').innerText = "Kunde inte hämta väder.";
+      });
+
+    // Hämta pendeltågsavgångar
+    const query = `
+      {
+        stopPlace(id: "${STUVSTA_STOP_ID}") {
+          estimatedCalls(timeRange: 3600, numberOfDepartures: 5) {
+            expectedDepartureTime
+            destinationDisplay {
+              frontText
+            }
+            serviceJourney {
+              journeyPattern {
+                line {
+                  publicCode
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    fetch("https://api.entur.io/journey-planner/v3/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ET-Client-Name": GTFS_CLIENT_NAME
+      },
+      body: JSON.stringify({ query })
+    })
+      .then(res => res.json())
+      .then(data => {
+        const calls = data.data.stopPlace.estimatedCalls;
+        const list = document.getElementById('departures');
+        list.innerHTML = "";
+        if (!calls.length) {
+          list.innerHTML = "<li>Inga avgångar just nu.</li>";
+        }
+        calls.forEach(call => {
+          const line = call.serviceJourney.journeyPattern.line.publicCode;
+          const dest = call.destinationDisplay.frontText;
+          const depTime = new Date(call.expectedDepartureTime);
+          const now = new Date();
+          const mins = Math.round((depTime - now) / 60000);
+
+          const li = document.createElement("li");
+          li.textContent = `${line} mot ${dest} – om ${mins} min`;
+          list.appendChild(li);
+        });
+      })
+      .catch(() => {
+        document.getElementById('departures').innerHTML = "<li>Kunde inte hämta avgångar 😞</li>";
+      });
   </script>
 </body>
 </html>
