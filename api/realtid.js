@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 module.exports = async (req, res) => {
   const weatherApiKey = process.env.OPENWEATHER_API_KEY;
   const trafiklabApiKey = process.env.TRAFIKLAB_API_KEY;
