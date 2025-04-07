@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
   const response = await fetch(gtfsUrl, {
   headers: {
     'Accept': 'application/json',
-    'Authorization': `${trafiklabApiKey}`
+    'Authorization': `{trafiklabApiKey}`
   }
 });
 
