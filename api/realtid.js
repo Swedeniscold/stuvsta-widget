@@ -3,7 +3,7 @@ module.exports = async (req, res) => {
   const trafiklabApiKey = process.env.TRAFIKLAB_API_KEY;
 
   const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&units=metric&lang=se&appid=${weatherApiKey}`;
-  const gtfsUrl = 'https://opendata.samtrafiken.se/gtfs-rt/sl/trip-updates';
+  const gtfsUrl = 'https://opendata.samtrafiken.se//gtfs-rt/SL/TripUpdates.pb';
 
   const response = await fetch(gtfsUrl, {
   headers: {
