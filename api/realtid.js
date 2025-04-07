@@ -25,6 +25,22 @@ module.exports = async (req, res) => {
       for (const entity of gtfsData.entity) {
         const trip = entity.tripUpdate?.trip;
         const stopTimeUpdates = entity.tripUpdate?.stopTimeUpdate;
+        const stopUpdates = stopTimeUpdates?.filter(s => s.stopId === "930001202");
+    
+        if (stopUpdates?.length > 0) {
+          console.log("🔍 Hittade en avgång till/från Stuvsta:", {
+            route_id: trip?.route_id,
+            direction_id: trip?.direction_id,
+            trip_headsign: trip?.trip_headsign,
+            departure: stopUpdates[0]?.departure?.time
+          });
+        }
+      }
+    }
+    if (Array.isArray(gtfsData.entity)) {
+      for (const entity of gtfsData.entity) {
+        const trip = entity.tripUpdate?.trip;
+        const stopTimeUpdates = entity.tripUpdate?.stopTimeUpdate;
         const directionId = trip?.direction_id;
         const stopUpdates = stopTimeUpdates?.filter(s => s.stopId === "930001202");
 
