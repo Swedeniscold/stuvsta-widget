@@ -5,10 +5,12 @@ module.exports = async (req, res) => {
   const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&units=metric&lang=se&appid=${weatherApiKey}`;
   const gtfsUrl = 'https://opendata.samtrafiken.se/gtfs-rt/sl/TripUpdates';
 
+  console.log(${trafiklabApiKey});
+
   const response = await fetch(gtfsUrl, {
   headers: {
     'Accept': 'application/json',
-    'Authorization': `apikey ${trafiklabApiKey}`
+    'Authorization': `${trafiklabApiKey}`
   }
 });
 
