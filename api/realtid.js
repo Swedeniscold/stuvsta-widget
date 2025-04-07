@@ -44,6 +44,9 @@ module.exports = async (req, res) => {
         }
       }
     }
+
+    console.log(${trafiklabApiKey});
+    
     if (Array.isArray(gtfsData.entity)) {
       for (const entity of gtfsData.entity) {
         const trip = entity.tripUpdate?.trip;
