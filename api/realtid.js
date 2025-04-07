@@ -14,28 +14,36 @@ module.exports = async (req, res) => {
     const weatherData = await weatherResponse.json();
     const gtfsData = await gtfsResponse.json();
 
+    // 👇 Lägg till loggning
+    console.log("GTFS-response:", JSON.stringify(gtfsData, null, 2));
+
     const now = new Date();
     const departures = [];
 
-    for (const entity of gtfsData.entity) {
-      const trip = entity.tripUpdate?.trip;
-      const stopTimeUpdates = entity.tripUpdate?.stopTimeUpdate;
-      const directionId = trip?.direction_id;
-      const stopUpdates = stopTimeUpdates?.filter(s => s.stopId === "930001202"); // Stuvsta (SL-id)
+    // ✅ Säker kontroll så vi inte kraschar
+    if (Array.isArray(gtfsData.entity)) {
+      for (const entity of gtfsData.entity) {
+        const trip = entity.tripUpdate?.trip;
+        const stopTimeUpdates = entity.tripUpdate?.stopTimeUpdate;
+        const directionId = trip?.direction_id;
+        const stopUpdates = stopTimeUpdates?.filter(s => s.stopId === "930001202");
 
-      if (trip?.route_id?.startsWith('40') && directionId === 1 && stopUpdates?.length > 0) {
-        const depTimeEpoch = stopUpdates[0]?.departure?.time;
-        if (depTimeEpoch) {
-          const departureTime = new Date(depTimeEpoch * 1000);
-          if (departureTime > now) {
-            departures.push({
-              lineNumber: trip.route_id,
-              departureTime: departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              destination: trip.trip_headsign,
-            });
+        if (trip?.route_id?.startsWith('40') && directionId === 1 && stopUpdates?.length > 0) {
+          const depTimeEpoch = stopUpdates[0]?.departure?.time;
+          if (depTimeEpoch) {
+            const departureTime = new Date(depTimeEpoch * 1000);
+            if (departureTime > now) {
+              departures.push({
+                lineNumber: trip.route_id,
+                departureTime: departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                destination: trip.trip_headsign,
+              });
+            }
           }
         }
       }
+    } else {
+      console.warn("Ingen entity-array i GTFS-datan!");
     }
 
     departures.sort((a, b) => a.departureTime.localeCompare(b.departureTime));
@@ -46,7 +54,7 @@ module.exports = async (req, res) => {
         temperature: Math.round(weatherData.main.temp),
         icon: weatherData.weather[0].icon,
       },
-      departures: departures.slice(0, 4), // visa max 4 avgångar
+      departures: departures.slice(0, 4),
     });
   } catch (error) {
     console.error("Fel:", error);
