@@ -4,46 +4,88 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stuvsta Trafik & Väder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      color: #333;
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
       padding: 1rem;
       max-width: 600px;
       margin: auto;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 0.5rem;
-    }
     .weather, .departures {
-      background: #fff;
-      padding: 1rem;
+      background: #111;
+      padding: 1.5rem;
       margin: 1rem 0;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     .weather-icon {
-      width: 60px;
-      height: 60px;
+      width: 80px;
+      height: 80px;
+      margin-right: 15px;
+    }
+    .weather-main {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .weather-temp {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .weather-desc {
+      color: #ccc;
+      margin: 0;
+    }
+    h2 {
+      margin-top: 0;
+      color: #3498db;
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
     }
     .departure {
-      padding: 0.5rem 0;
-      border-bottom: 1px solid #eee;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .departure:last-child {
       border-bottom: none;
     }
-    .small {
-      font-size: 0.9rem;
-      color: #666;
+    .departure-info {
+      flex-grow: 1;
+    }
+    .departure-dest {
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+      color: #fff;
+    }
+    .departure-line {
+      display: inline-block;
+      background: #2ecc71;
+      color: #000;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-right: 0.8rem;
+      min-width: 2rem;
+      text-align: center;
+    }
+    .departure-time {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #f39c12;
     }
   </style>
 </head>
 <body>
-  <h1>Stuvsta: Trafik & Väder</h1>
-
   <div class="weather" id="weather">
     <strong>Väderdata laddas...</strong>
   </div>
@@ -68,9 +110,14 @@
         const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
 
         container.innerHTML = `
-          <h2>Vädret i Huddinge</h2>
-          <img src="${iconUrl}" alt="${desc}" class="weather-icon" />
-          <p>${desc}, ${temp}°C</p>
+          <h2>Vädret</h2>
+          <div class="weather-main">
+            <img src="${iconUrl}" alt="${desc}" class="weather-icon" />
+            <div>
+              <p class="weather-temp">${temp}°C</p>
+              <p class="weather-desc">${desc}</p>
+            </div>
+          </div>
         `;
       })
       .catch(err => {
@@ -78,41 +125,33 @@
         console.error(err);
       });
 
-// Korrigera URL:en till din faktiska Vercel-deployment
-const vercelUrl = 'https://stuvsta-widget.vercel.app/'; // Ersätt med din faktiska Vercel URL
-
     // Hämta realtidsavgångar från Vercel
-    fetch(`${vercelUrl}/api/realtid`)
-      .then(res => {
-        console.log("Svar från Vercel API:", res.status);
-        if (!res.ok) {
-          throw new Error(`HTTP error ${res.status}`);
-        }
-        return res.json();
-      })
+    fetch('https://stuvsta-widget.vercel.app/api/realtid')
+      .then(res => res.json())
       .then(data => {
-        console.log("Data från Vercel:", data);
         const container = document.getElementById("departures");
         if (!data.departures || data.departures.length === 0) {
           container.innerHTML = "<p>Inga norrgående avgångar hittades just nu.</p>";
           return;
         }
 
-        container.innerHTML = `<h2>Nästa norrgående pendeltåg</h2>`;
+        container.innerHTML = `<h2>Pendeltåg norrut</h2>`;
         data.departures.forEach(dep => {
           container.innerHTML += `
             <div class="departure">
-              <strong>Tåg mot ${dep.destination}</strong><br/>
-              Avgår: ${dep.displayTime}
+              <div class="departure-info">
+                <span class="departure-line">${dep.line}</span>
+                <span class="departure-dest">Mot ${dep.destination}</span>
+              </div>
+              <div class="departure-time">${dep.displayTime}</div>
             </div>
           `;
         });
       })
       .catch(err => {
         document.getElementById("departures").innerHTML = "<p>Kunde inte hämta avgångsinformation.</p>";
-        console.error("Fel vid hämtning:", err);
+        console.error(err);
       });
   </script>
 </body>
 </html>
-
