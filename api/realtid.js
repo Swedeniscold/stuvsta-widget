@@ -1,91 +1,32 @@
+// api/realtid.js
+const fetch = require('node-fetch');
+
 module.exports = async (req, res) => {
-  const weatherApiKey = process.env.OPENWEATHER_API_KEY;
-  const trafiklabApiKey = process.env.TRAFIKLAB_API_KEY;
-
-  const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&units=metric&lang=se&appid=${weatherApiKey}`;
-  const gtfsUrl = `https://opendata.samtrafiken.se/gtfs-rt/sl/trip-updates?key=${trafiklabApiKey}`;
-
-  const response = await fetch(gtfsUrl, {
-  headers: {
-    'Accept': 'application/json'
-  }
-
-console.log("Calling GTFS API with key:", trafiklabApiKey);
-console.log("Full URL:", gtfsUrl);
-console.log({trafiklabApiKey});
-
-});
+  const siteId = 9303; // Stuvsta
+  const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures`;
 
   try {
-    const [weatherResponse, gtfsResponse] = await Promise.all([
-      fetch(weatherUrl),
-      fetch(gtfsUrl),
-    ]);
+    const response = await fetch(url);
+    const data = await response.json();
 
-    const weatherData = await weatherResponse.json();
-    const gtfsData = await gtfsResponse.json();
-
-    // 👇 Lägg till loggning
-    console.log("GTFS-response:", JSON.stringify(gtfsData, null, 2));
-
-    const now = new Date();
-    const departures = [];
-
-    // ✅ Säker kontroll så vi inte kraschar
-    if (Array.isArray(gtfsData.entity)) {
-      for (const entity of gtfsData.entity) {
-        const trip = entity.tripUpdate?.trip;
-        const stopTimeUpdates = entity.tripUpdate?.stopTimeUpdate;
-        const stopUpdates = stopTimeUpdates?.filter(s => s.stopId === "930001202");
-    
-        if (stopUpdates?.length > 0) {
-          console.log("🔍 Hittade en avgång till/från Stuvsta:", {
-            route_id: trip?.route_id,
-            direction_id: trip?.direction_id,
-            trip_headsign: trip?.trip_headsign,
-            departure: stopUpdates[0]?.departure?.time
-          });
-        }
-      }
-    }
-    
-    if (Array.isArray(gtfsData.entity)) {
-      for (const entity of gtfsData.entity) {
-        const trip = entity.tripUpdate?.trip;
-        const stopTimeUpdates = entity.tripUpdate?.stopTimeUpdate;
-        const directionId = trip?.direction_id;
-        const stopUpdates = stopTimeUpdates?.filter(s => s.stopId === "930001202");
-
-        if (trip?.route_id?.startsWith('40') && directionId === 1 && stopUpdates?.length > 0) {
-          const depTimeEpoch = stopUpdates[0]?.departure?.time;
-          if (depTimeEpoch) {
-            const departureTime = new Date(depTimeEpoch * 1000);
-            if (departureTime > now) {
-              departures.push({
-                lineNumber: trip.route_id,
-                departureTime: departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                destination: trip.trip_headsign,
-              });
-            }
-          }
-        }
-      }
-    } else {
-      console.warn("Ingen entity-array i GTFS-datan!");
+    if (!data || !data.departures) {
+      console.log("Ingen data från SL Transport");
+      return res.status(500).json({ error: "Ingen avgångsinformation hittades" });
     }
 
-    departures.sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+    // Filtrera norrgående pendeltåg (mot Stockholm City, Märsta, etc)
+    const destinations = ["Stockholm City", "Odenplan", "Uppsala", "Märsta"];
+    const trains = data.departures
+      .filter(dep => dep.transportMode === "TRAIN" && destinations.includes(dep.destination))
+      .map(dep => ({
+        line: dep.lineNumber,
+        destination: dep.destination,
+        displayTime: dep.displayTime
+      }));
 
-    res.status(200).json({
-      weather: {
-        description: weatherData.weather[0].description,
-        temperature: Math.round(weatherData.main.temp),
-        icon: weatherData.weather[0].icon,
-      },
-      departures: departures.slice(0, 4),
-    });
-  } catch (error) {
-    console.error("Fel:", error);
-    res.status(500).json({ error: 'Fel vid hämtning av data' });
+    res.status(200).json({ departures: trains });
+  } catch (err) {
+    console.error("Fel vid hämtning av SL-data:", err);
+    res.status(500).json({ error: "Kunde inte hämta avgångsinformation" });
   }
 };
