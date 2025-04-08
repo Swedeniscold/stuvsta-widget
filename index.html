@@ -16,6 +16,13 @@
       max-width: 600px;
       margin: auto;
     }
+    .clock {
+      text-align: center;
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
     .weather, .departures {
       background: #111;
       padding: 1.5rem;
@@ -109,9 +116,28 @@
       text-align: center;
       padding: 0.5rem;
     }
+    .departure-cancelled {
+      opacity: 0.6;
+    }
+    .departure-delayed {
+      background-color: rgba(231, 76, 60, 0.1);
+    }
+    .departure-time-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .departure-scheduled {
+      font-size: 0.9rem;
+      text-decoration: line-through;
+      color: #e74c3c;
+      margin-bottom: 0.2rem;
+    }
   </style>
 </head>
 <body>
+  <div class="clock" id="clock">00:00:00</div>
+  
   <div class="weather" id="weather">
     <strong>Väderdata laddas...</strong>
   </div>
@@ -128,6 +154,19 @@
     
     // Ersätt med din Vercel-app-URL
     const departuresUrl = 'https://stuvsta-widget.vercel.app/api/realtid';
+
+    // Hjälpfunktion för att formatera schemalagd tid
+    function formatScheduledTime(scheduledTimeString) {
+      if (!scheduledTimeString) return '';
+      
+      // Om scheduled är i ISO-format (2025-04-08T19:00:00)
+      if (scheduledTimeString.includes('T')) {
+        const scheduledTime = new Date(scheduledTimeString);
+        return scheduledTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      return scheduledTimeString;
+    }
 
     // Funktioner för att uppdatera data
     function updateWeather() {
@@ -210,13 +249,34 @@
 
           container.innerHTML = `<h2>Pendeltåg norrut</h2>`;
           data.departures.forEach(dep => {
+            // Hantera tidsinformation
+            let timeDisplay = '';
+            let statusClass = '';
+            
+            if (dep.isCancelled) {
+              timeDisplay = `<span class="departure-scheduled">Inställd</span>`;
+              statusClass = 'departure-cancelled';
+            } else if (dep.isDelayed) {
+              // Visa både inställd tid och faktisk tid
+              const scheduledTime = formatScheduledTime(dep.scheduledTime);
+              timeDisplay = `
+                <span class="departure-scheduled">${scheduledTime}</span>
+                <span class="departure-time">${dep.displayTime}</span>
+              `;
+              statusClass = 'departure-delayed';
+            } else {
+              timeDisplay = `<span class="departure-time">${dep.displayTime}</span>`;
+            }
+            
             container.innerHTML += `
-              <div class="departure">
+              <div class="departure ${statusClass}">
                 <div class="departure-info">
                   <span class="departure-line">${dep.line}</span>
-                  <span class="departure-dest">Mot ${dep.destination}</span>
+                  <span class="departure-dest">${dep.destination}</span>
                 </div>
-                <div class="departure-time">${dep.displayTime}</div>
+                <div class="departure-time-container">
+                  ${timeDisplay}
+                </div>
               </div>
             `;
           });
@@ -239,17 +299,29 @@
       const now = new Date();
       updateTimeElement.textContent = `Senast uppdaterad: ${now.toLocaleTimeString()}`;
     }
+    
+    // Funktion för att uppdatera klockan
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      
+      document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+    }
 
     // Gör initiala uppdateringar
+    updateClock(); // Uppdatera klockan direkt
     updateWeather();
     updateDepartures();
     updateRefreshTime();
 
     // Ställ in olika uppdateringsintervall
     const weatherUpdateInterval = 60 * 60 * 1000; // 60 minuter för väder
-    const departuresUpdateInterval = 5 * 60 * 1000; // 5 minuter för avgångar
+    const departuresUpdateInterval = 60 * 1000; // 1 minut för avgångar (uppdaterat från 5 minuter)
 
     // Schemalägg regelbundna uppdateringar
+    setInterval(updateClock, 1000); // Uppdatera klockan varje sekund
     setInterval(updateWeather, weatherUpdateInterval);
     setInterval(updateDepartures, departuresUpdateInterval);
 
