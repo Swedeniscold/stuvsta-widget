@@ -1,4 +1,4 @@
-// api/realtid.js
+// api/realtid.js - Uppdaterad kod
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
@@ -39,7 +39,10 @@ module.exports = async (req, res) => {
       .map(dep => ({
         line: dep.line?.designation || "Pendeltåg",
         destination: dep.destination || "Okänd",
-        displayTime: dep.display || dep.scheduled || "Okänd tid"
+        displayTime: dep.display || "Okänd tid",
+        scheduledTime: dep.scheduled || null,
+        isDelayed: dep.state === "DELAYED",
+        isCancelled: dep.state === "CANCELLED"
       }));
 
     console.log("Filtrerade fram", trains.length, "norrgående pendeltåg");
