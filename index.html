@@ -136,7 +136,7 @@
   </style>
 </head>
 <body>
-  <div class="clock" id="clock">00:00:00</div>
+  <div class="clock" id="clock">00:00</div>
   
   <div class="weather" id="weather">
     <strong>Väderdata laddas...</strong>
@@ -297,7 +297,7 @@
 
     function updateRefreshTime() {
       const now = new Date();
-      updateTimeElement.textContent = `Senast uppdaterad: ${now.toLocaleTimeString()}`;
+      updateTimeElement.textContent = `Senast uppdaterad: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
     
     // Funktion för att uppdatera klockan
@@ -305,9 +305,8 @@
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
       
-      document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+      document.getElementById('clock').textContent = `${hours}:${minutes}`;
     }
 
     // Gör initiala uppdateringar
@@ -321,7 +320,7 @@
     const departuresUpdateInterval = 60 * 1000; // 1 minut för avgångar (uppdaterat från 5 minuter)
 
     // Schemalägg regelbundna uppdateringar
-    setInterval(updateClock, 1000); // Uppdatera klockan varje sekund
+    setInterval(updateClock, 10000); // Uppdatera klockan var 10:e sekund
     setInterval(updateWeather, weatherUpdateInterval);
     setInterval(updateDepartures, departuresUpdateInterval);
 
