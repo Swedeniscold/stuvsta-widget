@@ -1,99 +1,107 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stuvsta Avgångar & Väder</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stuvsta Trafik & Väder</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 1rem;
-      background-color: #f5f5f5;
+      background: #f2f2f2;
       color: #333;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
     }
     h1 {
-      font-size: 1.5rem;
       text-align: center;
+      margin-bottom: 0.5rem;
     }
-    .weather {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background-color: #fff;
-      border-radius: 12px;
+    .weather, .departures {
+      background: #fff;
       padding: 1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 1.5rem;
+      margin: 1rem 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .weather img {
+    .weather-icon {
       width: 60px;
       height: 60px;
     }
     .departure {
-      background-color: #fff;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
     }
-    .line {
-      font-weight: bold;
-      font-size: 1.2rem;
+    .departure:last-child {
+      border-bottom: none;
     }
-    .time, .destination {
-      font-size: 1rem;
+    .small {
+      font-size: 0.9rem;
+      color: #666;
     }
   </style>
 </head>
 <body>
-  <h1>Stuvsta ➝ Norr • Avgångar & Väder</h1>
+  <h1>Stuvsta: Trafik & Väder</h1>
 
-  <div id="weather-info" class="weather">
-    <p>Laddar väder...</p>
+  <div class="weather" id="weather">
+    <strong>Väderdata laddas...</strong>
   </div>
 
-  <div id="departure-list">
-    <p>Laddar avgångar...</p>
+  <div class="departures" id="departures">
+    <strong>Hämtar avgångar...</strong>
   </div>
 
   <script>
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/realtid');
-        const data = await response.json();
+    // Din OpenWeatherMap API-nyckel
+    const weatherApiKey = 'be599ad20e043a231aae8d76cdd8b0b9';
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
 
-        // Väder
-        const weatherDiv = document.getElementById('weather-info');
-        weatherDiv.innerHTML = `
-          <img src="https://openweathermap.org/img/wn/${data.weather.icon}@2x.png" alt="Väder">
-          <div>
-            <div><strong>${data.weather.description}</strong></div>
-            <div>${data.weather.temperature}°C</div>
-          </div>
+    // Hämta väder
+    fetch(weatherUrl)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("weather");
+        const temp = Math.round(data.main.temp);
+        const desc = data.weather[0].description;
+        const icon = data.weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+
+        container.innerHTML = `
+          <h2>Vädret i Huddinge</h2>
+          <img src="${iconUrl}" alt="${desc}" class="weather-icon" />
+          <p>${desc}, ${temp}°C</p>
         `;
+      })
+      .catch(err => {
+        document.getElementById("weather").innerHTML = "<p>Kunde inte hämta väderdata.</p>";
+        console.error(err);
+      });
 
-        // Avgångar
-        const departureList = document.getElementById('departure-list');
-        if (data.departures.length === 0) {
-          departureList.innerHTML = '<p>Inga avgångar hittades.</p>';
-        } else {
-          departureList.innerHTML = data.departures.map(dep => `
-            <div class="departure">
-              <div class="line">🚆 Linje: ${dep.lineNumber}</div>
-              <div class="time">Avgång: ${dep.departureTime}</div>
-              <div class="destination">Mot: ${dep.destination}</div>
-            </div>
-          `).join('');
+    // Hämta realtidsavgångar från Vercel
+    fetch('/api/realtid')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("departures");
+        if (!data.departures || data.departures.length === 0) {
+          container.innerHTML = "<p>Inga norrgående avgångar hittades just nu.</p>";
+          return;
         }
-      } catch (err) {
-        document.getElementById('weather-info').innerHTML = '<p>Kunde inte hämta väderdata.</p>';
-        document.getElementById('departure-list').innerHTML = '<p>Kunde inte hämta avgångar.</p>';
-        console.error('Fel vid hämtning:', err);
-      }
-    }
 
-    fetchData();
-    setInterval(fetchData, 60000); // uppdatera varje minut
+        container.innerHTML = `<h2>Nästa norrgående pendeltåg</h2>`;
+        data.departures.forEach(dep => {
+          container.innerHTML += `
+            <div class="departure">
+              <strong>Tåg mot ${dep.destination}</strong><br/>
+              Avgår: ${dep.displayTime}
+            </div>
+          `;
+        });
+      })
+      .catch(err => {
+        document.getElementById("departures").innerHTML = "<p>Kunde inte hämta avgångsinformation.</p>";
+        console.error(err);
+      });
   </script>
 </body>
 </html>
