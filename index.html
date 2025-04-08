@@ -23,10 +23,24 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
+    .weather-container {
+      display: flex;
+      justify-content: space-between;
+    }
+    .weather-current, .weather-forecast {
+      flex: 1;
+    }
+    .weather-current {
+      border-right: 1px solid #222;
+      padding-right: 1rem;
+    }
+    .weather-forecast {
+      padding-left: 1rem;
+    }
     .weather-icon {
-      width: 80px;
-      height: 80px;
-      margin-right: 15px;
+      width: 70px;
+      height: 70px;
+      margin-right: 10px;
     }
     .weather-main {
       display: flex;
@@ -34,13 +48,19 @@
       margin-bottom: 0.5rem;
     }
     .weather-temp {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 700;
       margin: 0;
     }
     .weather-desc {
       color: #ccc;
       margin: 0;
+    }
+    .weather-label {
+      font-size: 0.9rem;
+      color: #3498db;
+      margin-bottom: 0.3rem;
+      font-weight: 600;
     }
     h2 {
       margin-top: 0;
@@ -97,33 +117,73 @@
   <script>
     // Din OpenWeatherMap API-nyckel
     const weatherApiKey = 'be599ad20e043a231aae8d76cdd8b0b9';
-    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
+    const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
 
-    // Hämta väder
-    fetch(weatherUrl)
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById("weather");
-        const temp = Math.round(data.main.temp);
-        const desc = data.weather[0].description;
-        const icon = data.weather[0].icon;
-        const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-
-        container.innerHTML = `
-          <h2>Vädret</h2>
-          <div class="weather-main">
-            <img src="${iconUrl}" alt="${desc}" class="weather-icon" />
-            <div>
-              <p class="weather-temp">${temp}°C</p>
-              <p class="weather-desc">${desc}</p>
+    // Hämta nuvarande väder och prognos
+    Promise.all([
+      fetch(currentWeatherUrl).then(res => res.json()),
+      fetch(forecastUrl).then(res => res.json())
+    ])
+    .then(([currentData, forecastData]) => {
+      const container = document.getElementById("weather");
+      
+      // Current weather
+      const currentTemp = Math.round(currentData.main.temp);
+      const currentDesc = currentData.weather[0].description;
+      const currentIcon = currentData.weather[0].icon;
+      const currentIconUrl = `https://openweathermap.org/img/wn/${currentIcon}@2x.png`;
+      
+      // Find forecast for 14:00 today
+      const today = new Date().toISOString().split('T')[0];
+      const forecastFor14 = forecastData.list.find(item => {
+        const itemDate = new Date(item.dt * 1000);
+        return itemDate.toISOString().split('T')[0] === today && 
+               itemDate.getHours() >= 13 && itemDate.getHours() <= 15;
+      });
+      
+      let forecastHtml = '';
+      if (forecastFor14) {
+        const forecastTemp = Math.round(forecastFor14.main.temp);
+        const forecastDesc = forecastFor14.weather[0].description;
+        const forecastIcon = forecastFor14.weather[0].icon;
+        const forecastIconUrl = `https://openweathermap.org/img/wn/${forecastIcon}@2x.png`;
+        
+        forecastHtml = `
+          <div class="weather-forecast">
+            <p class="weather-label">Kl 14 idag</p>
+            <div class="weather-main">
+              <img src="${forecastIconUrl}" alt="${forecastDesc}" class="weather-icon" />
+              <div>
+                <p class="weather-temp">${forecastTemp}°C</p>
+                <p class="weather-desc">${forecastDesc}</p>
+              </div>
             </div>
           </div>
         `;
-      })
-      .catch(err => {
-        document.getElementById("weather").innerHTML = "<p>Kunde inte hämta väderdata.</p>";
-        console.error(err);
-      });
+      }
+
+      container.innerHTML = `
+        <h2>Vädret</h2>
+        <div class="weather-container">
+          <div class="weather-current">
+            <p class="weather-label">Just nu</p>
+            <div class="weather-main">
+              <img src="${currentIconUrl}" alt="${currentDesc}" class="weather-icon" />
+              <div>
+                <p class="weather-temp">${currentTemp}°C</p>
+                <p class="weather-desc">${currentDesc}</p>
+              </div>
+            </div>
+          </div>
+          ${forecastHtml}
+        </div>
+      `;
+    })
+    .catch(err => {
+      document.getElementById("weather").innerHTML = "<p>Kunde inte hämta väderdata.</p>";
+      console.error(err);
+    });
 
     // Hämta realtidsavgångar från Vercel
     fetch('https://stuvsta-widget.vercel.app/api/realtid')
