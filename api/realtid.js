@@ -1,6 +1,7 @@
 // api/realtid.js
 const fetch = require('node-fetch');
 
+
 module.exports = async (req, res) => {
   const siteId = 9303; // Stuvsta
   const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures`;
