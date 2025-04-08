@@ -103,6 +103,12 @@
       font-weight: 700;
       color: #f39c12;
     }
+    #update-time {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      padding: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -115,103 +121,146 @@
   </div>
 
   <script>
-    // Din OpenWeatherMap API-nyckel
+    // API-nycklar och URL:er
     const weatherApiKey = 'be599ad20e043a231aae8d76cdd8b0b9';
     const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
+    
+    // Ersätt med din Vercel-app-URL
+    const departuresUrl = 'https://stuvsta-widget.vercel.app/api/realtid';
 
-    // Hämta nuvarande väder och prognos
-    Promise.all([
-      fetch(currentWeatherUrl).then(res => res.json()),
-      fetch(forecastUrl).then(res => res.json())
-    ])
-    .then(([currentData, forecastData]) => {
-      const container = document.getElementById("weather");
-      
-      // Current weather
-      const currentTemp = Math.round(currentData.main.temp);
-      const currentDesc = currentData.weather[0].description;
-      const currentIcon = currentData.weather[0].icon;
-      const currentIconUrl = `https://openweathermap.org/img/wn/${currentIcon}@2x.png`;
-      
-      // Find forecast for 14:00 today
-      const today = new Date().toISOString().split('T')[0];
-      const forecastFor14 = forecastData.list.find(item => {
-        const itemDate = new Date(item.dt * 1000);
-        return itemDate.toISOString().split('T')[0] === today && 
-               itemDate.getHours() >= 13 && itemDate.getHours() <= 15;
-      });
-      
-      let forecastHtml = '';
-      if (forecastFor14) {
-        const forecastTemp = Math.round(forecastFor14.main.temp);
-        const forecastDesc = forecastFor14.weather[0].description;
-        const forecastIcon = forecastFor14.weather[0].icon;
-        const forecastIconUrl = `https://openweathermap.org/img/wn/${forecastIcon}@2x.png`;
+    // Funktioner för att uppdatera data
+    function updateWeather() {
+      Promise.all([
+        fetch(currentWeatherUrl).then(res => res.json()),
+        fetch(forecastUrl).then(res => res.json())
+      ])
+      .then(([currentData, forecastData]) => {
+        const container = document.getElementById("weather");
         
-        forecastHtml = `
-          <div class="weather-forecast">
-            <p class="weather-label">Kl 14 idag</p>
-            <div class="weather-main">
-              <img src="${forecastIconUrl}" alt="${forecastDesc}" class="weather-icon" />
-              <div>
-                <p class="weather-temp">${forecastTemp}°C</p>
-                <p class="weather-desc">${forecastDesc}</p>
+        // Current weather
+        const currentTemp = Math.round(currentData.main.temp);
+        const currentDesc = currentData.weather[0].description;
+        const currentIcon = currentData.weather[0].icon;
+        const currentIconUrl = `https://openweathermap.org/img/wn/${currentIcon}@2x.png`;
+        
+        // Find forecast for 14:00 today
+        const today = new Date().toISOString().split('T')[0];
+        const forecastFor14 = forecastData.list.find(item => {
+          const itemDate = new Date(item.dt * 1000);
+          return itemDate.toISOString().split('T')[0] === today && 
+                 itemDate.getHours() >= 13 && itemDate.getHours() <= 15;
+        });
+        
+        let forecastHtml = '';
+        if (forecastFor14) {
+          const forecastTemp = Math.round(forecastFor14.main.temp);
+          const forecastDesc = forecastFor14.weather[0].description;
+          const forecastIcon = forecastFor14.weather[0].icon;
+          const forecastIconUrl = `https://openweathermap.org/img/wn/${forecastIcon}@2x.png`;
+          
+          forecastHtml = `
+            <div class="weather-forecast">
+              <p class="weather-label">Kl 14 idag</p>
+              <div class="weather-main">
+                <img src="${forecastIconUrl}" alt="${forecastDesc}" class="weather-icon" />
+                <div>
+                  <p class="weather-temp">${forecastTemp}°C</p>
+                  <p class="weather-desc">${forecastDesc}</p>
+                </div>
               </div>
-            </div>
-          </div>
-        `;
-      }
-
-      container.innerHTML = `
-        <h2>Vädret</h2>
-        <div class="weather-container">
-          <div class="weather-current">
-            <p class="weather-label">Just nu</p>
-            <div class="weather-main">
-              <img src="${currentIconUrl}" alt="${currentDesc}" class="weather-icon" />
-              <div>
-                <p class="weather-temp">${currentTemp}°C</p>
-                <p class="weather-desc">${currentDesc}</p>
-              </div>
-            </div>
-          </div>
-          ${forecastHtml}
-        </div>
-      `;
-    })
-    .catch(err => {
-      document.getElementById("weather").innerHTML = "<p>Kunde inte hämta väderdata.</p>";
-      console.error(err);
-    });
-
-    // Hämta realtidsavgångar från Vercel
-    fetch('https://stuvsta-widget.vercel.app/api/realtid')
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById("departures");
-        if (!data.departures || data.departures.length === 0) {
-          container.innerHTML = "<p>Inga norrgående avgångar hittades just nu.</p>";
-          return;
-        }
-
-        container.innerHTML = `<h2>Pendeltåg norrut</h2>`;
-        data.departures.forEach(dep => {
-          container.innerHTML += `
-            <div class="departure">
-              <div class="departure-info">
-                <span class="departure-line">${dep.line}</span>
-                <span class="departure-dest">Mot ${dep.destination}</span>
-              </div>
-              <div class="departure-time">${dep.displayTime}</div>
             </div>
           `;
-        });
+        }
+
+        container.innerHTML = `
+          <h2>Vädret</h2>
+          <div class="weather-container">
+            <div class="weather-current">
+              <p class="weather-label">Just nu</p>
+              <div class="weather-main">
+                <img src="${currentIconUrl}" alt="${currentDesc}" class="weather-icon" />
+                <div>
+                  <p class="weather-temp">${currentTemp}°C</p>
+                  <p class="weather-desc">${currentDesc}</p>
+                </div>
+              </div>
+            </div>
+            ${forecastHtml}
+          </div>
+        `;
+        
+        console.log("Väderdata uppdaterad:", new Date().toLocaleTimeString());
+        updateRefreshTime();
       })
       .catch(err => {
-        document.getElementById("departures").innerHTML = "<p>Kunde inte hämta avgångsinformation.</p>";
-        console.error(err);
+        console.error("Fel vid uppdatering av väder:", err);
       });
+    }
+
+    function updateDepartures() {
+      fetch(departuresUrl)
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("departures");
+          if (!data.departures || data.departures.length === 0) {
+            container.innerHTML = "<h2>Pendeltåg norrut</h2><p>Inga norrgående avgångar hittades just nu.</p>";
+            return;
+          }
+
+          container.innerHTML = `<h2>Pendeltåg norrut</h2>`;
+          data.departures.forEach(dep => {
+            container.innerHTML += `
+              <div class="departure">
+                <div class="departure-info">
+                  <span class="departure-line">${dep.line}</span>
+                  <span class="departure-dest">Mot ${dep.destination}</span>
+                </div>
+                <div class="departure-time">${dep.displayTime}</div>
+              </div>
+            `;
+          });
+          
+          console.log("Avgångsdata uppdaterad:", new Date().toLocaleTimeString());
+          updateRefreshTime();
+        })
+        .catch(err => {
+          document.getElementById("departures").innerHTML = "<h2>Pendeltåg norrut</h2><p>Kunde inte hämta avgångsinformation.</p>";
+          console.error("Fel vid uppdatering av avgångar:", err);
+        });
+    }
+
+    // Skapa och lägg till uppdateringstidselement
+    const updateTimeElement = document.createElement('div');
+    updateTimeElement.id = 'update-time';
+    document.body.appendChild(updateTimeElement);
+
+    function updateRefreshTime() {
+      const now = new Date();
+      updateTimeElement.textContent = `Senast uppdaterad: ${now.toLocaleTimeString()}`;
+    }
+
+    // Gör initiala uppdateringar
+    updateWeather();
+    updateDepartures();
+    updateRefreshTime();
+
+    // Ställ in olika uppdateringsintervall
+    const weatherUpdateInterval = 60 * 60 * 1000; // 60 minuter för väder
+    const departuresUpdateInterval = 5 * 60 * 1000; // 5 minuter för avgångar
+
+    // Schemalägg regelbundna uppdateringar
+    setInterval(updateWeather, weatherUpdateInterval);
+    setInterval(updateDepartures, departuresUpdateInterval);
+
+    // För att förhindra att telefonen går i viloläge (Fully Kiosk Browser stöder detta)
+    if (typeof window.fully !== 'undefined') {
+      window.fully.bind('screenOn', function() {
+        // Uppdatera data när skärmen slås på
+        updateWeather();
+        updateDepartures();
+      });
+    }
   </script>
 </body>
 </html>
