@@ -78,10 +78,20 @@
         console.error(err);
       });
 
+// Korrigera URL:en till din faktiska Vercel-deployment
+const vercelUrl = 'https://din-vercel-app-domän.vercel.app'; // Ersätt med din faktiska Vercel URL
+
     // Hämta realtidsavgångar från Vercel
-    fetch('/api/realtid')
-      .then(res => res.json())
+    fetch(`${vercelUrl}/api/realtid`)
+      .then(res => {
+        console.log("Svar från Vercel API:", res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP error ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log("Data från Vercel:", data);
         const container = document.getElementById("departures");
         if (!data.departures || data.departures.length === 0) {
           container.innerHTML = "<p>Inga norrgående avgångar hittades just nu.</p>";
@@ -100,7 +110,7 @@
       })
       .catch(err => {
         document.getElementById("departures").innerHTML = "<p>Kunde inte hämta avgångsinformation.</p>";
-        console.error(err);
+        console.error("Fel vid hämtning:", err);
       });
   </script>
 </body>
