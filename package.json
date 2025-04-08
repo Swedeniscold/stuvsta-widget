@@ -1,0 +1,9 @@
+{
+  "name": "stuvsta-trafik-vader",
+  "version": "1.0.0",
+  "description": "Visar realtidsinformation om pendeltåg och väder",
+  "main": "index.html",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
