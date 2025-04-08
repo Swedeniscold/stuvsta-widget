@@ -7,3 +7,7 @@
     "node-fetch": "^2.6.7"
   }
 }
+
+git add package.json
+git commit -m "Add node-fetch dependency"
+git push
