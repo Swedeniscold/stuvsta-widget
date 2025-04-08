@@ -5,7 +5,14 @@ module.exports = async (req, res) => {
   const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,SE&units=metric&lang=se&appid=${weatherApiKey}`;
   const gtfsUrl = `https://opendata.samtrafiken.se/gtfs-rt/sl/trip-updates?key=${trafiklabApiKey}`;
 
-  console.log({trafiklabApiKey});
+  const response = await fetch(gtfsUrl, {
+  headers: {
+    'Accept': 'application/json'
+  }
+
+console.log("Calling GTFS API with key:", trafiklabApiKey);
+console.log("Full URL:", gtfsUrl);
+console.log({trafiklabApiKey});
 
 });
 
