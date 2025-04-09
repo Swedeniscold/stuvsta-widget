@@ -266,6 +266,69 @@
 
     // Funktioner för att uppdatera data
     function updateWeather() {
+      // Kontrollera om det är ett speciellt datum först
+      const today = new Date();
+      const month = today.getMonth() + 1; // getMonth() ger 0-11
+      const day = today.getDate();
+      
+      // Skapa en nyckel i formatet "månad-dag"
+      const dateKey = `${month}-${day}`;
+      
+      // Definiera speciella datum
+      const specialDates = {
+        "4-16": { name: "Signe", image: "unicorn.svg" },
+        "6-8": { name: "Sixten", image: "pingisracket.svg" },
+        "6-15": { name: "pappa", image: "hammarby.svg" },
+        "8-28": { name: "mamma", image: "redwine.svg" }
+      };
+      
+      // Kontrollera om dagens datum är speciellt
+      if (specialDates[dateKey]) {
+        const special = specialDates[dateKey];
+        const weatherContainer = document.getElementById("weather");
+        
+        // Skapa SVG bilder för varje specialdatum
+        const images = {
+          "unicorn.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="birthday-image">
+            <path d="M70,20c-6.6,0-12,5.4-12,12c0,1.5,0.3,2.9,0.8,4.2C56.5,38,52.4,40,50,40c-2.4,0-6.5-2-8.8-3.8 c0.5-1.3,0.8-2.7,0.8-4.2c0-6.6-5.4-12-12-12s-12,5.4-12,12c0,6.3,4.8,11.4,11,11.9V60h-3v5h3v15h5V65h35v15h5V65h3v-5h-3V44 c6.2-0.5,11-5.6,11-11.9C82,25.4,76.6,20,70,20z M30,38c-3.3,0-6-2.7-6-6s2.7-6,6-6s6,2.7,6,6S33.3,38,30,38z M50,60 c-2.8,0-5-2.2-5-5s2.2-5,5-5s5,2.2,5,5S52.8,60,50,60z M70,38c-3.3,0-6-2.7-6-6s2.7-6,6-6s6,2.7,6,6S73.3,38,70,38z" fill="#E91E63"/>
+            <path d="M48,25L35,10c0,0,1.5,8.5-4,13" fill="none" stroke="#E91E63" stroke-width="2"/>
+            <circle cx="45" cy="50" r="2" fill="white"/>
+            <circle cx="55" cy="50" r="2" fill="white"/>
+          </svg>`,
+          
+          "pingisracket.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="birthday-image">
+            <path d="M30,75 L60,20 C70,5 85,5 90,15 C95,25 90,40 75,50 L30,75 Z" fill="#F44336"/>
+            <path d="M30,75 L20,85 C18,87 15,87 13,85 L15,83 C13,81 13,78 15,76 L25,66 L30,75 Z" fill="#8D6E63"/>
+            <circle cx="60" cy="30" r="15" fill="#F44336" stroke="#FFFFFF" stroke-width="2"/>
+          </svg>`,
+          
+          "hammarby.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="birthday-image">
+            <rect x="0" y="0" width="100" height="100" fill="#00884A"/>
+            <rect x="0" y="40" width="100" height="20" fill="#FFFFFF"/>
+            <path d="M30,30 L40,50 L30,70 L50,70 L70,30 L50,30 Z" fill="#FFFFFF"/>
+          </svg>`,
+          
+          "redwine.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="birthday-image">
+            <path d="M40,20 L60,20 L58,35 C58,35 70,40 70,55 C70,70 60,80 50,80 C40,80 30,70 30,55 C30,40 42,35 42,35 Z" fill="#8E2729"/>
+            <path d="M45,80 L55,80 L55,90 L65,90 L65,95 L35,95 L35,90 L45,90 Z" fill="#8D6E63"/>
+            <ellipse cx="50" cy="55" rx="15" ry="10" fill="#C62828" opacity="0.5"/>
+          </svg>`
+        };
+        
+        // Skapa födelsedagsmeddelande
+        weatherContainer.innerHTML = `
+          <div class="birthday-container">
+            <div class="birthday-message">Grattis ${special.name}!</div>
+            ${images[special.image]}
+          </div>
+        `;
+        
+        // Uppdatera tidsstämpel även vid specialdatum
+        updateRefreshTime();
+        return;
+      }
+      
+      // Vanlig väderuppdatering om det inte är specialdatum
       Promise.all([
         fetch(currentWeatherUrl).then(res => res.json()),
         fetch(forecastUrl).then(res => res.json())
