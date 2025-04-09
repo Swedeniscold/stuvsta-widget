@@ -33,21 +33,24 @@
     .weather-container {
       display: flex;
       justify-content: space-between;
+      flex-wrap: wrap; /* Tillåt att innehållet bryts vid behov */
     }
     .weather-current, .weather-forecast {
       flex: 1;
+      min-width: 45%; /* Sätt en minsta bredd för att undvika komprimering */
+      max-width: 50%; /* Begränsa max-bredd så det inte blir för brett */
     }
     .weather-current {
       border-right: 1px solid #222;
-      padding-right: 1rem;
+      padding-right: 0.5rem; /* Minska padding lite */
     }
     .weather-forecast {
-      padding-left: 1rem;
+      padding-left: 0.5rem; /* Minska padding lite */
     }
     .weather-icon {
-      width: 70px;
-      height: 70px;
-      margin-right: 10px;
+      width: 60px; /* Lite mindre ikoner */
+      height: 60px;
+      margin-right: 5px; /* Mindre marginal */
     }
     .weather-main {
       display: flex;
@@ -55,7 +58,7 @@
       margin-bottom: 0.5rem;
     }
     .weather-temp {
-      font-size: 2rem;
+      font-size: 1.8rem; /* Lite mindre textstorlek */
       font-weight: 700;
       margin: 0;
     }
