@@ -12,40 +12,98 @@
       font-family: 'Inter', sans-serif;
       background: #000;
       color: #fff;
-      padding: 1rem;
-      max-width: 600px;
+      padding: 0.5rem;
       margin: auto;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .main-container {
+      display: flex;
+      flex-direction: column;
+    }
+    /* När skärmen är i liggande läge (landscape) */
+    @media (orientation: landscape) {
+      .main-container {
+        flex-direction: row;
+        align-items: flex-start;
+      }
+      .weather {
+        width: 30%;
+        margin-right: 0.5rem;
+        margin-bottom: 0;
+      }
+      .departures {
+        width: 70%;
+        margin-left: 0.5rem;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+      .clock {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 2rem;
+        margin: 0;
+        background-color: rgba(0,0,0,0.7);
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
+      }
     }
     .clock {
       text-align: center;
       font-size: 3rem;
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
       color: #fff;
     }
     .weather, .departures {
       background: #111;
-      padding: 1.5rem;
-      margin: 1rem 0;
+      padding: 1rem;
+      margin: 0.5rem 0;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     .weather-container {
       display: flex;
       justify-content: space-between;
-      flex-wrap: wrap; /* Tillåt att innehållet bryts vid behov */
+      flex-wrap: wrap;
     }
-    .weather-current, .weather-forecast {
-      flex: 1;
-      min-width: 45%; /* Sätt en minsta bredd för att undvika komprimering */
-      max-width: 50%; /* Begränsa max-bredd så det inte blir för brett */
+    /* I liggande läge, staplad layout för väderpanelen */
+    @media (orientation: landscape) {
+      .weather-container {
+        flex-direction: column;
+      }
+      .weather-current, .weather-forecast {
+        flex: 0 0 auto;
+        max-width: 100%;
+        width: 100%;
+        border-right: none;
+        padding-right: 0;
+        padding-left: 0;
+      }
+      .weather-current {
+        border-bottom: 1px solid #222;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .weather-forecast {
+        padding-top: 0.5rem;
+      }
     }
-    .weather-current {
-      border-right: 1px solid #222;
-      padding-right: 0.5rem; /* Minska padding lite */
-    }
-    .weather-forecast {
-      padding-left: 0.5rem; /* Minska padding lite */
+    /* I stående läge, horisontell layout */
+    @media (orientation: portrait) {
+      .weather-current, .weather-forecast {
+        flex: 1;
+        min-width: 45%;
+        max-width: 50%;
+      }
+      .weather-current {
+        border-right: 1px solid #222;
+        padding-right: 0.5rem;
+      }
+      .weather-forecast {
+        padding-left: 0.5rem;
+      }
     }
     .weather-icon {
       width: 60px; /* Lite mindre ikoner */
@@ -75,16 +133,27 @@
     h2 {
       margin-top: 0;
       color: #3498db;
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 0.7rem;
+    }
+    @media (orientation: landscape) {
+      h2 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+      }
     }
     .departure {
-      padding: 0.8rem 0;
+      padding: 0.5rem 0;
       border-bottom: 1px solid #222;
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    @media (orientation: landscape) {
+      .departure {
+        padding: 0.3rem 0;
+      }
     }
     .departure:last-child {
       border-bottom: none;
@@ -114,10 +183,15 @@
       color: #f39c12;
     }
     #update-time {
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       color: #666;
       text-align: center;
-      padding: 0.5rem;
+      padding: 0.3rem;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0,0,0,0.7);
     }
     .departure-cancelled {
       opacity: 0.6;
@@ -141,12 +215,14 @@
 <body>
   <div class="clock" id="clock">00:00</div>
   
-  <div class="weather" id="weather">
-    <strong>Väderdata laddas...</strong>
-  </div>
+  <div class="main-container">
+    <div class="weather" id="weather">
+      <strong>Väderdata laddas...</strong>
+    </div>
 
-  <div class="departures" id="departures">
-    <strong>Hämtar avgångar...</strong>
+    <div class="departures" id="departures">
+      <strong>Hämtar avgångar...</strong>
+    </div>
   </div>
 
   <script>
