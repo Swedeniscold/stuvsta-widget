@@ -51,10 +51,22 @@
     }
     .clock {
       text-align: center;
-      font-size: 3rem;
+      font-size: 2.2rem; /* Mindre klocka */
       font-weight: 700;
       margin-bottom: 0.5rem;
       color: #fff;
+    }
+    @media (orientation: landscape) {
+      .clock {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 1.8rem; /* Ännu mindre i liggande läge */
+        margin: 0;
+        padding: 0; /* Ta bort padding */
+        border-radius: 0; /* Ta bort border-radius */
+        background-color: transparent; /* Transparent bakgrund */
+      }
     }
     .weather, .departures {
       background: #111;
@@ -62,6 +74,11 @@
       margin: 0.5rem 0;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    @media (orientation: landscape) {
+      .weather, .departures {
+        background: #111; /* Säkerställ samma bakgrundsfärg i liggande läge */
+      }
     }
     .weather-container {
       display: flex;
