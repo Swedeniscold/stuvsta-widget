@@ -4,6 +4,7 @@ const fetch = require('node-fetch');
 module.exports = async (req, res) => {
   const siteId = 9525; // Stuvsta pendeltågsstation
   const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures`;
+  console.log("Hämtar avgångar för station ID:", siteId);
 
   try {
     const response = await fetch(url);
@@ -33,6 +34,12 @@ module.exports = async (req, res) => {
         const destination = (dep.destination || "").toLowerCase();
         const northDestinations = ["märsta", "uppsala", "stockholm", "arlanda"];
         const isNorthbound = northDestinations.some(dest => destination.includes(dest));
+
+        console.log(`Avgång: ${destination}, ` + 
+              `Tåg: ${isTrainMode}, ` + 
+              `Pendeltåg: ${isPendeltag}, ` + 
+              `Norrgående: ${isNorthbound}, ` +
+              `Riktningskod: ${dep.direction_code}`);
         
         return isTrainMode && isPendeltag && isNorthbound;
       })
@@ -46,6 +53,12 @@ module.exports = async (req, res) => {
       }));
 
     console.log("Filtrerade fram", trains.length, "norrgående pendeltåg");
+
+    // I din realtid.js, lägg till denna rad efter att ha fått svaret
+    console.log("Komplett API-svar:", JSON.stringify(data).substring(0, 2000)); // Visar första 2000 tecken
+
+    // Och denna rad efter filtrering
+    console.log("Filtrerade tåg:", JSON.stringify(trains));
     
     // Tillåt CORS för enklare testning
     res.setHeader('Access-Control-Allow-Origin', '*');
