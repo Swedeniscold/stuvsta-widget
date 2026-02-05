@@ -38,6 +38,12 @@
         max-height: 85vh;
         overflow-y: auto;
       }
+      .departures.buses {
+        border-left: 4px solid #f39c12;
+      }
+    .departure-line.bus {
+        background: #f39c12 !important;
+      }
       .clock {
         position: absolute;
         top: 0.5rem;
@@ -240,6 +246,9 @@
     <div class="departures" id="departures">
       <strong>Hämtar avgångar...</strong>
     </div>
+    <div class="departures buses" id="buses">
+      <strong>Hämtar bussar...</strong>
+    </div>
   </div>
 
   <script>
@@ -247,6 +256,8 @@
     const weatherApiKey = 'be599ad20e043a231aae8d76cdd8b0b9';
     const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=Huddinge,se&units=metric&lang=sv&appid=${weatherApiKey}`;
+    const busesUrl = 'https://stuvsta-widget.vercel.app/api/buses';
+    const ENABLE_BUSES = true; // <-- Ändra till false för att inaktivera bussar
     
     // Ersätt med din Vercel-app-URL
     const departuresUrl = 'https://stuvsta-widget.vercel.app/api/realtid';
@@ -449,6 +460,95 @@
         });
     }
 
+    function updateBuses() {
+    // Kolla om bussar är aktiverade
+      if (!ENABLE_BUSES) {
+        const container = document.getElementById("buses");
+        if (container) {
+          container.style.display = 'none';
+        }
+        return;
+      }
+
+      fetch(busesUrl)
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("buses");
+      
+        // Visa container om den var dold
+          container.style.display = 'block';
+      
+        // Visa varning om data är cachad
+          let warningHtml = '';
+          if (data.cached) {
+            warningHtml = `
+              <div style="padding: 0.8rem; background: rgba(243, 156, 18, 0.15); border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #f39c12;">
+                <p style="margin: 0; font-size: 0.9rem; color: #f39c12;">
+                  ⚠️ ${data.warning || 'Visar cachad data'} (${data.cacheAge} min gammal)
+                </p>
+              </div>
+            `;
+          }
+      
+          if (!data.departures || data.departures.length === 0) {
+            container.innerHTML = `
+              <h2>Bussar från Skeppsmyreparken</h2>
+              ${warningHtml}
+              <p>Inga norrgående bussar hittades just nu.</p>
+            `;
+            return;
+          }
+
+          container.innerHTML = `<h2>Bussar från Skeppsmyreparken</h2>${warningHtml}`;
+      
+          data.departures.forEach(dep => {
+            let timeDisplay = '';
+            let statusClass = '';
+        
+            if (dep.isCancelled) {
+              timeDisplay = `<span class="departure-scheduled">Inställd</span>`;
+              statusClass = 'departure-cancelled';
+            } else if (dep.isDelayed) {
+              const scheduledTime = formatScheduledTime(dep.scheduledTime);
+              timeDisplay = `
+                <span class="departure-scheduled">${scheduledTime}</span>
+                <span class="departure-time">${dep.displayTime}</span>
+              `;
+              statusClass = 'departure-delayed';
+            } else {
+              timeDisplay = `<span class="departure-time">${dep.displayTime}</span>`;
+            }
+        
+            container.innerHTML += `
+              <div class="departure ${statusClass}">
+                <div class="departure-info">
+                  <span class="departure-line bus">${dep.line}</span>
+                  <span class="departure-dest">${dep.destination}</span>
+                </div>
+                <div class="departure-time-container">
+                  ${timeDisplay}
+                </div>
+              </div>
+            `;
+          });
+      
+          console.log("Bussdata uppdaterad:", new Date().toLocaleTimeString(), data.cached ? "(cachad)" : "(live)");
+        })
+        .catch(err => {
+          const container = document.getElementById("buses");
+          container.innerHTML = `
+            <h2>Bussar från Skeppsmyreparken</h2>
+            <div style="padding: 1rem; background: rgba(231, 76, 60, 0.1); border-radius: 8px; border-left: 4px solid #e74c3c;">
+              <p style="margin: 0 0 0.5rem 0; font-weight: 600;">⚠️ Kan inte hämta bussar</p>
+              <p style="margin: 0; font-size: 0.9rem; color: #ccc;">
+                SL:s API svarar inte. Försöker igen automatiskt...
+              </p>
+            </div>
+          `;
+          console.error("Fel vid uppdatering av bussar:", err);
+        });
+      }
+
     // Skapa och lägg till uppdateringstidselement
     const updateTimeElement = document.createElement('div');
     updateTimeElement.id = 'update-time';
@@ -473,6 +573,11 @@
     updateWeather();
     updateDepartures();
     updateRefreshTime();
+
+    if (ENABLE_BUSES) {
+      updateBuses(); // Initial uppdatering
+      setInterval(updateBuses, departuresUpdateInterval); // Samma intervall som tågen
+    }
 
     // Ställ in olika uppdateringsintervall
     const weatherUpdateInterval = 60 * 60 * 1000; // 60 minuter för väder
