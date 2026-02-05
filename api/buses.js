@@ -24,8 +24,7 @@ async function fetchWithTimeout(url, timeout = 5000) {
 }
 
 module.exports = async (req, res) => {
-  // BYT UT DETTA SITE ID när du har hittat rätt nummer för Skeppsmyreparken
-  const busSiteId = 7065; // <-- ÄNDRA DETTA till Skeppsmyreparkens site ID
+  const busSiteId = 7065; // Skeppsmyreparken
   
   const url = `https://transport.integration.sl.se/v1/sites/${busSiteId}/departures`;
 
@@ -66,7 +65,8 @@ module.exports = async (req, res) => {
         displayTime: dep.display || "Okänd tid",
         scheduledTime: dep.scheduled || null,
         isDelayed: dep.state === "DELAYED",
-        isCancelled: dep.state === "CANCELLED"
+        isCancelled: dep.state === "CANCELLED",
+        type: "bus"  // Markera som buss
       }));
 
     console.log("✅ Hämtade", buses.length, "norrgående bussar");
