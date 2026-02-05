@@ -41,9 +41,6 @@
       .departures.buses {
         border-left: 4px solid #f39c12;
       }
-    .departure-line.bus {
-        background: #f39c12 !important;
-      }
       .clock {
         position: absolute;
         top: 0.5rem;
@@ -200,6 +197,10 @@
       min-width: 2rem;
       text-align: center;
     }
+    .departure-line.bus {
+      background: #e74c3c !important;  /* Röd för bussar */
+      color: #fff !important;
+    }
     .departure-time {
       font-size: 1.3rem;
       font-weight: 700;
@@ -245,9 +246,6 @@
 
     <div class="departures" id="departures">
       <strong>Hämtar avgångar...</strong>
-    </div>
-    <div class="departures buses" id="buses">
-      <strong>Hämtar bussar...</strong>
     </div>
   </div>
 
@@ -408,18 +406,84 @@
     }
 
     function updateDepartures() {
-      fetch(departuresUrl)
-        .then(res => res.json())
-        .then(data => {
+      // Hämta både tåg och bussar parallellt
+      const promises = [
+        fetch(departuresUrl).then(res => res.json())
+      ];
+      
+      if (ENABLE_BUSES) {
+        promises.push(fetch(busesUrl).then(res => res.json()));
+      }
+      
+      Promise.all(promises)
+        .then(results => {
+          const trainData = results[0];
+          const busData = results[1] || { departures: [] };
+          
           const container = document.getElementById("departures");
-          if (!data.departures || data.departures.length === 0) {
-            container.innerHTML = "<h2>Pendeltåg norrut</h2><p>Inga norrgående avgångar hittades just nu.</p>";
+          
+          // Samla alla avgångar
+          let allDepartures = [];
+          
+          // Lägg till tåg
+          if (trainData.departures) {
+            allDepartures = allDepartures.concat(
+              trainData.departures.map(dep => ({ ...dep, type: 'train' }))
+            );
+          }
+          
+          // Lägg till bussar
+          if (busData.departures) {
+            allDepartures = allDepartures.concat(busData.departures);
+          }
+          
+          // Visa varning om någon data är cachad
+          let warningHtml = '';
+          if (trainData.cached || busData.cached) {
+            const warnings = [];
+            if (trainData.cached) warnings.push(`Tåg (${trainData.cacheAge} min)`);
+            if (busData.cached) warnings.push(`Bussar (${busData.cacheAge} min)`);
+            
+            warningHtml = `
+              <div style="padding: 0.8rem; background: rgba(243, 156, 18, 0.15); border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #f39c12;">
+                <p style="margin: 0; font-size: 0.9rem; color: #f39c12;">
+                  ⚠️ Visar cachad data: ${warnings.join(', ')}
+                </p>
+              </div>
+            `;
+          }
+          
+          if (allDepartures.length === 0) {
+            container.innerHTML = `
+              ${warningHtml}
+              <p>Inga avgångar hittades just nu.</p>
+            `;
             return;
           }
-
-          container.innerHTML = `<h2>Pendeltåg norrut</h2>`;
-          data.departures.forEach(dep => {
-            // Hantera tidsinformation
+          
+          // Sortera avgångar efter tid (om möjligt)
+          // Detta är en enkel sortering - du kan förbättra den
+          allDepartures.sort((a, b) => {
+            // Om båda har "Nu" eller "X min", försök sortera
+            const aTime = a.displayTime.toLowerCase();
+            const bTime = b.displayTime.toLowerCase();
+            
+            if (aTime === 'nu') return -1;
+            if (bTime === 'nu') return 1;
+            
+            const aMatch = aTime.match(/(\d+)\s*min/);
+            const bMatch = bTime.match(/(\d+)\s*min/);
+            
+            if (aMatch && bMatch) {
+              return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+            }
+            
+            return 0; // Behåll ordning om vi inte kan jämföra
+          });
+          
+          container.innerHTML = warningHtml;
+          
+          allDepartures.forEach(dep => {
             let timeDisplay = '';
             let statusClass = '';
             
@@ -427,7 +491,6 @@
               timeDisplay = `<span class="departure-scheduled">Inställd</span>`;
               statusClass = 'departure-cancelled';
             } else if (dep.isDelayed) {
-              // Visa både inställd tid och faktisk tid
               const scheduledTime = formatScheduledTime(dep.scheduledTime);
               timeDisplay = `
                 <span class="departure-scheduled">${scheduledTime}</span>
@@ -438,10 +501,13 @@
               timeDisplay = `<span class="departure-time">${dep.displayTime}</span>`;
             }
             
+            // Lägg till "bus" class om det är en buss
+            const lineClass = dep.type === 'bus' ? 'departure-line bus' : 'departure-line';
+            
             container.innerHTML += `
               <div class="departure ${statusClass}">
                 <div class="departure-info">
-                  <span class="departure-line">${dep.line}</span>
+                  <span class="${lineClass}">${dep.line}</span>
                   <span class="departure-dest">${dep.destination}</span>
                 </div>
                 <div class="departure-time-container">
@@ -451,15 +517,24 @@
             `;
           });
           
-          console.log("Avgångsdata uppdaterad:", new Date().toLocaleTimeString());
+          console.log("Avgångsdata uppdaterad:", new Date().toLocaleTimeString(), 
+                      `(${allDepartures.filter(d => d.type === 'train').length} tåg, ` +
+                      `${allDepartures.filter(d => d.type === 'bus').length} bussar)`);
           updateRefreshTime();
         })
         .catch(err => {
-          document.getElementById("departures").innerHTML = "<h2>Pendeltåg norrut</h2><p>Kunde inte hämta avgångsinformation.</p>";
+          const container = document.getElementById("departures");
+          container.innerHTML = `
+            <div style="padding: 1rem; background: rgba(231, 76, 60, 0.1); border-radius: 8px; border-left: 4px solid #e74c3c;">
+              <p style="margin: 0 0 0.5rem 0; font-weight: 600;">⚠️ Kan inte hämta avgångar</p>
+              <p style="margin: 0; font-size: 0.9rem; color: #ccc;">
+                SL:s API svarar inte. Försöker igen automatiskt...
+              </p>
+            </div>
+          `;
           console.error("Fel vid uppdatering av avgångar:", err);
         });
     }
-
     function updateBuses() {
     // Kolla om bussar är aktiverade
       if (!ENABLE_BUSES) {
@@ -574,10 +649,10 @@
     updateDepartures();
     updateRefreshTime();
 
-    if (ENABLE_BUSES) {
-      updateBuses(); // Initial uppdatering
-      setInterval(updateBuses, departuresUpdateInterval); // Samma intervall som tågen
-    }
+ // Stryker dessa pga uppdatering   if (ENABLE_BUSES) {
+ //     updateBuses(); // Initial uppdatering
+ //     setInterval(updateBuses, departuresUpdateInterval); // Samma intervall som tågen
+ //   }
 
     // Ställ in olika uppdateringsintervall
     const weatherUpdateInterval = 60 * 60 * 1000; // 60 minuter för väder
