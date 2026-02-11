@@ -37,7 +37,7 @@
         margin-left: 0.5rem;
         max-height: 85vh;
         overflow-y: auto;
-        margin-top: 3rem;
+        margin-top: 4rem;
       }
       .departures.buses {
         border-left: 4px solid #f39c12;
@@ -481,6 +481,8 @@
             
             return 0; // Behåll ordning om vi inte kan jämföra
           });
+
+          allDepartures = allDepartures.slice(0, 7); // Begränsa till max 7 avgångar
           
           container.innerHTML = warningHtml;
           
