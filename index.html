@@ -487,7 +487,7 @@
 
           allDepartures = allDepartures.slice(0, 7); // Begränsa till max 7 avgångar
           
-          container.innerHTML = warningHtml;
+          container.innerHTML = `<div style="height: 3rem;"></div>${warningHtml}`;
           
           allDepartures.forEach(dep => {
             let timeDisplay = '';
